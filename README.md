@@ -1,5 +1,3 @@
-<!-- image -->
-
 ![pic](./assets/Cornell-Bowers-CIS.png)
 
 # smart-assistive-cane
