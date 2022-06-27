@@ -38,6 +38,7 @@ ROTATION_MINIMUM_VIBRATION = 0.2
 
 ################################
 
+
 def cane_callback(cane_pose):
     """
     Sends vibration commands to smart cane to guide it to next target waypoint which consists of target position and target orientation)
@@ -58,7 +59,7 @@ def cane_callback(cane_pose):
                     You have reached target waypoint! Start tracking the next target waypoint (if any left)
 
         Deciding Command Magnitude:
-        
+
             Move Forward:
 
                 If the distance from target position is greater than FORWARD_CONSTANT_THRESHOLD:
@@ -82,7 +83,7 @@ def cane_callback(cane_pose):
     -------
     None 
     """
-    
+
     def vibration_command(current_yaw, target_yaw):
         """
         Returns vibration commands to indicate direction to turn
@@ -111,38 +112,39 @@ def cane_callback(cane_pose):
         # TODO Rajat document this
         if current_yaw < target_yaw:
 
-            if target_yaw - current_yaw < math.pi: #move left
+            if target_yaw - current_yaw < math.pi:  # move left
                 if target_yaw - current_yaw > ROTATION_CONSTANT_THRESHOLD:
                     return (1.0, 0.0)
                 else:
                     return (ROTATION_MINIMUM_VIBRATION + (1-ROTATION_MINIMUM_VIBRATION)*(target_yaw - current_yaw)/ROTATION_CONSTANT_THRESHOLD, 0.0)
-            else: # move right
+            else:  # move right
                 if current_yaw + 2*math.pi - target_yaw > ROTATION_CONSTANT_THRESHOLD:
                     return (0.0, 1.0)
                 else:
                     return (0.0, ROTATION_MINIMUM_VIBRATION + (1-ROTATION_MINIMUM_VIBRATION)*(current_yaw + 2*math.pi - target_yaw)/ROTATION_CONSTANT_THRESHOLD)
-        
+
         # TODO Rajat document this
         else:
 
-            if current_yaw - target_yaw < math.pi: # move right
+            if current_yaw - target_yaw < math.pi:  # move right
                 if current_yaw - target_yaw > ROTATION_CONSTANT_THRESHOLD:
                     return (0.0, 1.0)
                 else:
                     return (0.0, ROTATION_MINIMUM_VIBRATION + (1-ROTATION_MINIMUM_VIBRATION)*(current_yaw - target_yaw)/ROTATION_CONSTANT_THRESHOLD)
 
-            else: # move left
+            else:  # move left
                 if target_yaw + 2*math.pi - current_yaw > ROTATION_CONSTANT_THRESHOLD:
                     return (1.0, 0.0)
                 else:
                     return (ROTATION_MINIMUM_VIBRATION + (1-ROTATION_MINIMUM_VIBRATION)*(target_yaw + 2*math.pi - current_yaw)/ROTATION_CONSTANT_THRESHOLD, 0.0)
-    
+
     box_topic = "/boxes_state"
-    local_box_poses = rospy.wait_for_message(box_topic, PoseArray, timeout=None)
+    local_box_poses = rospy.wait_for_message(
+        box_topic, PoseArray, timeout=None)
     world_visualizer.visualize_boxes(local_box_poses.poses)
 
     global current_index
-    global path 
+    global path
 
     if current_index == len(path):
         print("Successfully executed path")
@@ -162,19 +164,22 @@ def cane_callback(cane_pose):
 
     waypoint_target = path[current_index]
 
-    print("Current Index: ",current_index)
-    print("Target: ",waypoint_target)
+    print("Current Index: ", current_index)
+    print("Target: ", waypoint_target)
 
-    (_, _, cane_yaw) = euler_from_quaternion([cane_pose.orientation.x, cane_pose.orientation.y, cane_pose.orientation.z, cane_pose.orientation.w])
-    (_, _, waypoint_target_yaw) = euler_from_quaternion([waypoint_target.orientation.x, waypoint_target.orientation.y, waypoint_target.orientation.z, waypoint_target.orientation.w])
+    (_, _, cane_yaw) = euler_from_quaternion(
+        [cane_pose.orientation.x, cane_pose.orientation.y, cane_pose.orientation.z, cane_pose.orientation.w])
+    (_, _, waypoint_target_yaw) = euler_from_quaternion(
+        [waypoint_target.orientation.x, waypoint_target.orientation.y, waypoint_target.orientation.z, waypoint_target.orientation.w])
 
     if (waypoint_target.position.x - cane_pose.position.x)**2 + (waypoint_target.position.y - cane_pose.position.y)**2 > MINIMUM_DISTANCE_TARGET_THRESHOLD**2:
 
-        theta = math.atan2(waypoint_target.position.y - cane_pose.position.y, waypoint_target.position.x - cane_pose.position.x)
+        theta = math.atan2(waypoint_target.position.y - cane_pose.position.y,
+                           waypoint_target.position.x - cane_pose.position.x)
 
         if abs(theta - cane_yaw) > MINIMUM_ROTATION_TARGET_THRESHOLD:
             (vibration_left, vibration_right) = vibration_command(cane_yaw, theta)
-        
+
             cane_command = cane_command_msg()
             cane_command.vibration_forward = 0
             cane_command.vibration_left = vibration_left
@@ -190,21 +195,21 @@ def cane_callback(cane_pose):
             if (waypoint_target.position.x - cane_pose.position.x)**2 + (waypoint_target.position.y - cane_pose.position.y)**2 > FORWARD_CONSTANT_THRESHOLD**2:
                 cane_command.vibration_forward = 1.0
             else:
-                cane_command.vibration_forward = FORWARD_ROTATION_MINIMUM_VIBRATION + (1-FORWARD_ROTATION_MINIMUM_VIBRATION)*math.sqrt((waypoint_target.position.x - cane_pose.position.x)**2 + (waypoint_target.position.y - cane_pose.position.y)**2)/FORWARD_CONSTANT_THRESHOLD
-            
-            cane_command_publisher.publish(cane_command)
+                cane_command.vibration_forward = FORWARD_ROTATION_MINIMUM_VIBRATION + (1-FORWARD_ROTATION_MINIMUM_VIBRATION)*math.sqrt(
+                    (waypoint_target.position.x - cane_pose.position.x)**2 + (waypoint_target.position.y - cane_pose.position.y)**2)/FORWARD_CONSTANT_THRESHOLD
 
+            cane_command_publisher.publish(cane_command)
 
     elif abs(waypoint_target_yaw - cane_yaw) > MINIMUM_ROTATION_TARGET_THRESHOLD:
 
-        (vibration_left, vibration_right) = vibration_command(cane_yaw, waypoint_target_yaw)
+        (vibration_left, vibration_right) = vibration_command(
+            cane_yaw, waypoint_target_yaw)
 
         cane_command = cane_command_msg()
         cane_command.vibration_forward = 0
         cane_command.vibration_left = vibration_left
         cane_command.vibration_right = vibration_right
         cane_command_publisher.publish(cane_command)
-
 
     else:
         current_index += 1
@@ -218,7 +223,6 @@ def cane_callback(cane_pose):
         cane_command_publisher.publish(cane_command)
         quit()
 
-    
 
 if __name__ == '__main__':
 
@@ -227,21 +231,23 @@ if __name__ == '__main__':
     box_topic = "/boxes_state"
     cane_topic = "/cane_state"
 
-    local_box_poses = rospy.wait_for_message(box_topic, PoseArray, timeout=None)
+    local_box_poses = rospy.wait_for_message(
+        box_topic, PoseArray, timeout=None)
     start_cane_pose = rospy.wait_for_message(cane_topic, Pose, timeout=None)
 
-    planner = AStar(2.0,2.0,50,50)
+    planner = AStar(2.0, 2.0, 50, 50)
 
     # find nearest angle
 
-    (_, _, start_pose_cane_yaw) = euler_from_quaternion([start_cane_pose.orientation.x, start_cane_pose.orientation.y, start_cane_pose.orientation.z, start_cane_pose.orientation.w])
+    (_, _, start_pose_cane_yaw) = euler_from_quaternion(
+        [start_cane_pose.orientation.x, start_cane_pose.orientation.y, start_cane_pose.orientation.z, start_cane_pose.orientation.w])
 
     print("Cane Yaw: ", start_pose_cane_yaw)
     if start_pose_cane_yaw < 0:
         start_pose_cane_yaw += 2*math.pi
 
     if start_pose_cane_yaw < 0:
-        print("euler_from_quaternion returns <0 angle: ",start_pose_cane_yaw)
+        print("euler_from_quaternion returns <0 angle: ", start_pose_cane_yaw)
         exit()
 
     if start_pose_cane_yaw >= math.pi/4 and start_pose_cane_yaw < 3*math.pi/4:
@@ -260,7 +266,8 @@ if __name__ == '__main__':
     goal_cane_pose_direction = 0
 
     global path
-    path = planner.solve((start_cane_pose.position.x,start_cane_pose.position.y,start_direction),(goal_cane_pose_x,goal_cane_pose_y,goal_cane_pose_direction),local_box_poses.poses)
+    path = planner.solve((start_cane_pose.position.x, start_cane_pose.position.y, start_direction),
+                         (goal_cane_pose_x, goal_cane_pose_y, goal_cane_pose_direction), local_box_poses.poses)
 
     global current_index
     current_index = 0
@@ -277,7 +284,8 @@ if __name__ == '__main__':
     """
     ####### Insert Code Here #######
 
-    cane_command_publisher = None
+    cane_command_publisher = rospy.Publisher(
+        'cane_command', cane_command_msg, queue_size=10)
 
     ################################
 
@@ -287,4 +295,3 @@ if __name__ == '__main__':
 
     rospy.Subscriber(cane_topic, Pose, cane_callback)
     rospy.spin()
-

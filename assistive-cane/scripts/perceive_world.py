@@ -32,6 +32,7 @@ Day 4: None
 Day 5: Demo!
 """
 
+
 def pixel2world(camera_info, image_x, image_y, orie_x, orie_y, depth):
     """
     Returns pixel location and yaw in world space using camera and depth info
@@ -59,7 +60,7 @@ def pixel2world(camera_info, image_x, image_y, orie_x, orie_y, depth):
         a tuple of pixel location in world space and yaw (world_x, world_y, world_z, yaw)
     """
 
-    # Get focal lengths in pixel units (fx, fy) and principal 
+    # Get focal lengths in pixel units (fx, fy) and principal
     # and points (cx, cy)
     # Reference: https://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html
     fx = camera_info.K[0]
@@ -80,7 +81,7 @@ def pixel2world(camera_info, image_x, image_y, orie_x, orie_y, depth):
 
     # Calculate yaw, make sure to use radians!
     yaw = None
-    
+
     ################################
 
     return (world_x, world_y, world_z, yaw)
@@ -124,15 +125,15 @@ def image_callback(rgb_msg, camera_info):
             - Get aruco parameters
             - Perform detection
         """
-        ####### Insert Code Here ####### Day 2
-       
+        # Insert Code Here ####### Day 2
+
         # Get dictionary of ArUco markers being used
         arucoDict = None
         # Define ArUco detection parameters
         arucoParams = None
         # Perform ArUco marker detection
         (corners, ids, rejected) = None, None, None
-        
+
         ################################
 
         if corners == None:
@@ -154,7 +155,7 @@ def image_callback(rgb_msg, camera_info):
 
             # loop over the detected ArUCo corners
             for (markerCorner, markerID) in zip(corners, ids):
-                
+
                 # extract the marker corners (which are always returned in
                 # top-left, top-right, bottom-right, and bottom-left order)
                 corners = markerCorner.reshape((4, 2))
@@ -163,7 +164,7 @@ def image_callback(rgb_msg, camera_info):
                 # compute the center (x, y)-coordinates of the ArUco marker
                 centerX = (topLeft[0] + bottomRight[0]) // 2
                 centerY = (topLeft[1] + bottomRight[1]) // 2
-                
+
                 # compute the top-middle (x, y)-coordinates of the ArUco marker
                 forwardX = (topLeft[0] + topRight[0]) // 2
                 forwardY = (topLeft[1] + topRight[1]) // 2
@@ -175,31 +176,35 @@ def image_callback(rgb_msg, camera_info):
                 cv2.line(image, topRight, bottomRight, (0, 255, 0), 2)
                 cv2.line(image, bottomRight, bottomLeft, (0, 255, 0), 2)
                 cv2.line(image, bottomLeft, topLeft, (0, 255, 0), 2)
-                
+
                 # visualize center of ArUco marker
                 cv2.circle(image, (centerX, centerY), 4, (0, 0, 255), -1)
-                
+
                 # visualize top of ArUco marker
                 cv2.circle(image, (forwardX, forwardY), 4, (0, 0, 255), -1)
-                
-                # draw the ArUco marker ID on the image
-                cv2.putText(image, str(markerID), (topLeft[0], topLeft[1] - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-                print("[INFO] ArUco marker ID: {}".format(markerID))   
+                # draw the ArUco marker ID on the image
+                cv2.putText(image, str(
+                    markerID), (topLeft[0], topLeft[1] - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+                print("[INFO] ArUco marker ID: {}".format(markerID))
 
                 # Get x and y reference vectors
-                orie_x = int((topLeft[0]+topRight[0])/2.0 - (bottomLeft[0] + bottomRight[0])/2.0)
-                orie_y = int((topLeft[1]+topRight[1])/2.0 - (bottomLeft[1] + bottomRight[1])/2.0)
+                orie_x = int((topLeft[0]+topRight[0])/2.0 -
+                             (bottomLeft[0] + bottomRight[0])/2.0)
+                orie_y = int((topLeft[1]+topRight[1])/2.0 -
+                             (bottomLeft[1] + bottomRight[1])/2.0)
 
                 # If marker is for obstacle (box)
                 if markerID == 1:
 
                     # Get world coordinates of box
-                    world_x, world_y, world_z, yaw = pixel2world(camera_info, centerX, centerY, orie_x, orie_y, CAMERA_TO_BOX_TOP)
+                    world_x, world_y, world_z, yaw = pixel2world(
+                        camera_info, centerX, centerY, orie_x, orie_y, CAMERA_TO_BOX_TOP)
 
                     if world_x == None:
                         return None
-                        
+
                     # Convert to quaternion
                     q = quaternion_from_euler(0, 0, yaw)
 
@@ -210,16 +215,18 @@ def image_callback(rgb_msg, camera_info):
                     pose.position.z = world_z
                     pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
 
-                    pose = transform_pose(pose, "camera_color_optical_frame", "map")
+                    pose = transform_pose(
+                        pose, "camera_color_optical_frame", "map")
                     box_poses.append(pose)
 
                 # If marker is for cane
                 elif markerID == 0:
-                    
+
                     is_cane_detected = True
 
                     # Get world coordinates of cane
-                    world_x, world_y, world_z, yaw = pixel2world(camera_info, centerX, centerY, orie_x, orie_y, CAMERA_TO_CANE_TOP)
+                    world_x, world_y, world_z, yaw = pixel2world(
+                        camera_info, centerX, centerY, orie_x, orie_y, CAMERA_TO_CANE_TOP)
 
                     if world_x == None:
                         return None
@@ -231,12 +238,13 @@ def image_callback(rgb_msg, camera_info):
                     cane_pose.position.z = world_z
                     cane_pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
 
-                    cane_pose = transform_pose(cane_pose, "camera_color_optical_frame", "map")
-            
+                    cane_pose = transform_pose(
+                        cane_pose, "camera_color_optical_frame", "map")
+
             # show the output image
             cv2.imshow("Image", image)
             cv2.waitKey(100)
-        
+
             if is_cane_detected:
                 cane_state_publisher.publish(cane_pose)
                 if visualize_detected_objects:
@@ -245,7 +253,7 @@ def image_callback(rgb_msg, camera_info):
             box_pose_array = PoseArray()
             box_pose_array.poses = box_poses
 
-            boxes_state_publisher.publish(box_pose_array)    
+            boxes_state_publisher.publish(box_pose_array)
 
             if len(box_poses) != 0 and visualize_detected_objects:
                 world_visualizer.visualize_boxes(box_poses)
@@ -254,8 +262,8 @@ def image_callback(rgb_msg, camera_info):
             cv2.imshow("Image", cv2_img)
             cv2.waitKey(100)
 
+
 def main():
-    
     """
     [Day 1] TODO 1: Write code for the following
         - Initialize a ROS node called "perceive_world"
@@ -265,21 +273,22 @@ def main():
 
     """
     ####### Insert Code Here #######
-
+    rospy.init_node('perceive_world', anonymous=True)
     # Initialize node
 
     # Define image topics
-    image_topic = None
-    camera_info_topic = None
+    image_topic = "/camera/color/image_raw"
+    camera_info_topic = "/camera/color/camera_info"
 
     ################################
-    
+
     # Set up your subscriber and define its callback
-    # rospy.Subscriber(image_topic, Image, image_callback)
+    rospy.Subscriber(image_topic, Image, image_callback)
     # Spin until ctrl + c
     image_sub = message_filters.Subscriber(image_topic, Image)
     info_sub = message_filters.Subscriber(camera_info_topic, CameraInfo)
-    ts = message_filters.ApproximateTimeSynchronizer([image_sub, info_sub], 10, 0.2)
+    ts = message_filters.ApproximateTimeSynchronizer(
+        [image_sub, info_sub], 10, 0.2)
     ts.registerCallback(image_callback)
 
     global world_visualizer
@@ -296,7 +305,8 @@ def main():
     """
     ####### Insert Code Here #######
 
-    boxes_state_publisher = None
+    boxes_state_publisher = rospy.Publisher(
+        'boxes_state', PoseArray, queue_size=10)
 
     ################################
 
@@ -310,12 +320,13 @@ def main():
 
     """
     ####### Insert Code Here #######
-    
-    cane_state_publisher = None
-    
+
+    cane_state_publisher = rospy.Publisher('cane_state', Pose, queue_size=10)
+
     ################################
 
     rospy.spin()
+
 
 if __name__ == '__main__':
     main()
