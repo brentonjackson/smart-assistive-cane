@@ -19,9 +19,9 @@ smart assistive cane
 
 - Use the **Robot Operating System (ROS) framework** to build a robot
   application
-- Perform **state estimation** using fiducial markers
+- Perform **state estimation** using fiducial markers (used ArUco markers)
 - Plan robot movements using a **graph-based motion planning**
-  algorithm
-- Send control signals to a robot that will guide a human user
+  algorithm (used A Star algorithm)
+- Send control signals to a robot that will guide a human user (Used RPi GPIO with ROS messages)
 - Understand and **integrate various sub-fields of robotics** such as state
-  estimation, motion planning, and controls towards developing a
+  estimation, motion planning, and controls towards developing a smart assistive cane
